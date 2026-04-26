@@ -207,9 +207,9 @@
     gap: 4px;
   }
 
-  .form-group.date { flex: 0 0 140px; }
-  .form-group.name { flex: 1 1 120px; }
-  .form-group.amount { flex: 0 0 110px; }
+  .form-group.date { flex: 0 0 118px; }
+  .form-group.name { flex: 1 1 100px; }
+  .form-group.amount { flex: 0 0 90px; }
 
   .form-group label {
     font-size: 10px;
@@ -221,14 +221,19 @@
   .form-group input {
     border: 1.5px solid var(--border);
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: 8px 8px;
     font-family: 'Zen Maru Gothic', sans-serif;
-    font-size: 13px;
+    font-size: 16px;
     color: var(--text);
     background: var(--pink-pale);
     outline: none;
     transition: border 0.2s;
     width: 100%;
+  }
+
+  .form-group.date input {
+    font-size: 13px;
+    padding: 8px 4px;
   }
 
   .form-group input:focus { border-color: var(--lavender); background: white; }
@@ -339,6 +344,42 @@
   .down-btn { background: var(--peach-light); color: var(--peach); }
   .down-btn:hover { background: var(--peach); color: white; }
 
+  /* 編集メニュー（コピー含む） */
+  .edit-menu {
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 8px;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    gap: 6px;
+  }
+
+  .edit-menu-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .edit-menu-btn .btn-icon { font-size: 14px; }
+  .edit-menu-btn.do-edit { background: var(--lavender-light); color: var(--lavender); }
+  .edit-menu-btn.do-edit:hover { background: var(--lavender); color: white; }
+  .edit-menu-btn.do-copy { background: var(--pink-light); color: var(--pink); }
+  .edit-menu-btn.do-copy:hover { background: var(--pink); color: white; }
+  .edit-menu-btn.do-cancel { background: var(--border); color: var(--text-muted); }
+  .edit-menu-btn.do-cancel:hover { background: #d1c4e9; }
+
   /* 編集フォーム(インライン) */
   .edit-form {
     background: var(--pink-pale);
@@ -351,9 +392,9 @@
   .edit-form input {
     border: 1.5px solid var(--border);
     border-radius: 8px;
-    padding: 6px 8px;
+    padding: 8px 10px;
     font-family: 'Zen Maru Gothic', sans-serif;
-    font-size: 12px;
+    font-size: 16px;
     width: 100%;
     margin-bottom: 6px;
     outline: none;
@@ -365,7 +406,7 @@
 
   .edit-actions { display: flex; gap: 6px; }
 
-  .save-btn, .cancel-btn {
+  .save-btn, .cancel-btn, .copy-inline-btn {
     flex: 1;
     padding: 7px;
     border: none;
@@ -379,6 +420,8 @@
 
   .save-btn { background: var(--lavender); color: white; }
   .save-btn:hover { background: #7c3aed; }
+  .copy-inline-btn { background: var(--pink-light); color: var(--pink); }
+  .copy-inline-btn:hover { background: var(--pink); color: white; }
   .cancel-btn { background: var(--border); color: var(--text-muted); }
   .cancel-btn:hover { background: #d1c4e9; }
 
@@ -724,16 +767,26 @@ function deleteRecord(type, id) {
   updateAllViews();
 }
 
-// 編集フォーム表示
+// 編集フォーム表示（✏ボタンで直接開く）
 function showEdit(type, id) {
-  // すでに開いてるのを閉じる
-  document.querySelectorAll('.edit-form').forEach(f => f.remove());
+  document.querySelectorAll('.edit-form, .edit-menu').forEach(f => f.remove());
   const item = data[type].find(r => r.id === id);
   if (!item) return;
   const itemEl = document.querySelector(`[data-id="${id}"]`);
   const form = document.createElement('div');
   form.className = 'edit-form';
-  if (type !== 'wish') {
+  if (type === 'earn') {
+    form.innerHTML = `
+      <input type="date" id="edit-date-${id}" value="${item.date}">
+      <input type="text" id="edit-name-${id}" value="${item.name}" placeholder="名前">
+      <input type="number" id="edit-amount-${id}" value="${item.amount}" placeholder="金額">
+      <div class="edit-actions">
+        <button class="save-btn" onclick="saveEdit('${type}', ${id})">保存</button>
+        <button class="copy-inline-btn" onclick="copyRecord('earn', ${id})">📋 コピー</button>
+        <button class="cancel-btn" onclick="cancelEdit()">キャンセル</button>
+      </div>
+    `;
+  } else if (type === 'spend') {
     form.innerHTML = `
       <input type="date" id="edit-date-${id}" value="${item.date}">
       <input type="text" id="edit-name-${id}" value="${item.name}" placeholder="名前">
@@ -757,7 +810,7 @@ function showEdit(type, id) {
 }
 
 function cancelEdit() {
-  document.querySelectorAll('.edit-form').forEach(f => f.remove());
+  document.querySelectorAll('.edit-form, .edit-menu').forEach(f => f.remove());
 }
 
 function saveEdit(type, id) {
@@ -771,6 +824,17 @@ function saveEdit(type, id) {
   if (type !== 'wish') {
     item.date = document.getElementById(`edit-date-${id}`).value;
   }
+  saveData();
+  updateAllViews();
+}
+
+// コピー（働いたタブ専用）
+function copyRecord(type, id) {
+  const item = data[type].find(r => r.id === id);
+  if (!item) return;
+  const today = new Date().toISOString().split('T')[0];
+  data[type].push({ id: Date.now(), date: today, name: item.name, amount: item.amount });
+  cancelEdit();
   saveData();
   updateAllViews();
 }
