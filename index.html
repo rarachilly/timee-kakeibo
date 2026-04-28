@@ -16,6 +16,8 @@
     --mint-light: #d1fae5;
     --peach: #fb923c;
     --peach-light: #ffedd5;
+    --sky: #38bdf8;
+    --sky-light: #e0f2fe;
     --text: #3b2a4a;
     --text-muted: #9d8aad;
     --white: #ffffff;
@@ -110,6 +112,7 @@
   .tab.active-earn { background: linear-gradient(135deg, var(--mint), #059669); color: white; box-shadow: 0 3px 12px rgba(52,211,153,0.4); }
   .tab.active-spend { background: linear-gradient(135deg, var(--peach), #ea580c); color: white; box-shadow: 0 3px 12px rgba(251,146,60,0.4); }
   .tab.active-wish { background: linear-gradient(135deg, var(--pink), var(--lavender)); color: white; box-shadow: 0 3px 12px rgba(167,139,250,0.4); }
+  .tab.active-sub { background: linear-gradient(135deg, var(--sky), #0284c7); color: white; box-shadow: 0 3px 12px rgba(56,189,248,0.4); }
 
   /* パネル */
   .panel { display: none; padding: 16px 14px; }
@@ -138,6 +141,7 @@
   .summary-card.earn { background: linear-gradient(135deg, #34d399, #059669); }
   .summary-card.spend { background: linear-gradient(135deg, #fb923c, #ea580c); }
   .summary-card.wish { background: linear-gradient(135deg, var(--pink), var(--lavender)); }
+  .summary-card.sub { background: linear-gradient(135deg, var(--sky), #0284c7); }
 
   .summary-label {
     font-size: 11px;
@@ -255,6 +259,7 @@
   .add-btn.earn { background: linear-gradient(135deg, var(--mint), #059669); }
   .add-btn.spend { background: linear-gradient(135deg, var(--peach), #ea580c); }
   .add-btn.wish { background: linear-gradient(135deg, var(--pink), var(--lavender)); }
+  .add-btn.sub { background: linear-gradient(135deg, var(--sky), #0284c7); }
   .add-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
   .add-btn:active { transform: translateY(0); }
 
@@ -291,6 +296,7 @@
   .dot-earn { background: var(--mint); }
   .dot-spend { background: var(--peach); }
   .dot-wish { background: linear-gradient(135deg, var(--pink), var(--lavender)); }
+  .dot-sub { background: var(--sky); }
 
   .record-body { flex: 1; min-width: 0; }
 
@@ -319,6 +325,7 @@
   .amount-earn { color: #059669; }
   .amount-spend { color: #ea580c; }
   .amount-wish { color: var(--lavender); }
+  .amount-sub { color: #0284c7; }
 
   .record-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
@@ -561,6 +568,7 @@
   <button class="tab active-earn" onclick="switchTab('earn')">💼 働いた</button>
   <button class="tab" onclick="switchTab('spend')">🛍 使った</button>
   <button class="tab" onclick="switchTab('wish')">✨ 欲しい</button>
+  <button class="tab" onclick="switchTab('sub')">📱 サブスク</button>
 </div>
 
 <!-- 働いたタブ -->
@@ -655,6 +663,34 @@
   <div class="records-list" id="wish-list"></div>
 </div>
 
+<!-- サブスクタブ -->
+<div class="panel" id="panel-sub">
+  <div class="summary-card sub">
+    <div class="summary-label">サブスク月額合計</div>
+    <div class="summary-amount" id="sub-total"><span>¥</span>0</div>
+  </div>
+  <div class="add-form">
+    <div class="form-title">+ サブスクを追加</div>
+    <div class="form-row">
+      <div class="form-group date">
+        <label>引き落とし日</label>
+        <input type="number" id="sub-day" placeholder="例：15" min="1" max="31">
+      </div>
+      <div class="form-group name">
+        <label>サービス名</label>
+        <input type="text" id="sub-name" placeholder="例：Spotify">
+      </div>
+      <div class="form-group amount">
+        <label>金額（円）</label>
+        <input type="number" id="sub-amount" placeholder="980">
+      </div>
+    </div>
+    <button class="add-btn sub" onclick="addRecord('sub')">追加する</button>
+  </div>
+  <div class="section-title">サブスク一覧</div>
+  <div class="records-list" id="sub-list"></div>
+</div>
+
 <!-- モーダル -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
@@ -672,7 +708,8 @@
 let data = {
   earn: [],
   spend: [],
-  wish: []
+  wish: [],
+  sub: []
 };
 
 // 表示中の月 (YYYY-MM)
@@ -712,7 +749,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => { t.className = 'tab'; });
   document.getElementById('panel-' + tab).classList.add('active');
   const tabBtns = document.querySelectorAll('.tab');
-  const idx = { earn: 0, spend: 1, wish: 2 };
+  const idx = { earn: 0, spend: 1, wish: 2, sub: 3 };
   tabBtns[idx[tab]].classList.add('active-' + tab);
 }
 
@@ -754,6 +791,15 @@ function addRecord(type) {
     data.wish.push({ id: Date.now(), name, amount });
     document.getElementById('wish-name').value = '';
     document.getElementById('wish-amount').value = '';
+  } else if (type === 'sub') {
+    const day = parseInt(document.getElementById('sub-day').value);
+    const name = document.getElementById('sub-name').value.trim();
+    const amount = parseInt(document.getElementById('sub-amount').value);
+    if (isNaN(day) || day < 1 || day > 31 || !name || isNaN(amount) || amount <= 0) { alert('全部正しく入力してね！'); return; }
+    data.sub.push({ id: Date.now(), day, name, amount });
+    document.getElementById('sub-day').value = '';
+    document.getElementById('sub-name').value = '';
+    document.getElementById('sub-amount').value = '';
   }
   saveData();
   updateAllViews();
@@ -796,6 +842,16 @@ function showEdit(type, id) {
         <button class="cancel-btn" onclick="cancelEdit()">キャンセル</button>
       </div>
     `;
+  } else if (type === 'sub') {
+    form.innerHTML = `
+      <input type="number" id="edit-day-${id}" value="${item.day}" placeholder="日にち" min="1" max="31">
+      <input type="text" id="edit-name-${id}" value="${item.name}" placeholder="サービス名">
+      <input type="number" id="edit-amount-${id}" value="${item.amount}" placeholder="金額">
+      <div class="edit-actions">
+        <button class="save-btn" onclick="saveEdit('sub', ${id})">保存</button>
+        <button class="cancel-btn" onclick="cancelEdit()">キャンセル</button>
+      </div>
+    `;
   } else {
     form.innerHTML = `
       <input type="text" id="edit-name-${id}" value="${item.name}" placeholder="名前">
@@ -821,8 +877,13 @@ function saveEdit(type, id) {
   if (!name || isNaN(amount) || amount <= 0) { alert('正しく入力してね！'); return; }
   item.name = name;
   item.amount = amount;
-  if (type !== 'wish') {
+  if (type === 'earn' || type === 'spend') {
     item.date = document.getElementById(`edit-date-${id}`).value;
+  }
+  if (type === 'sub') {
+    const day = parseInt(document.getElementById(`edit-day-${id}`).value);
+    if (isNaN(day) || day < 1 || day > 31) { alert('日にちを正しく入れてね！'); return; }
+    item.day = day;
   }
   saveData();
   updateAllViews();
@@ -876,12 +937,14 @@ function updateAllViews() {
   updateView('earn');
   updateView('spend');
   updateView('wish');
+  updateView('sub');
 }
 
 function updateView(type) {
   if (type === 'earn') renderEarn();
   else if (type === 'spend') renderSpend();
-  else renderWish();
+  else if (type === 'wish') renderWish();
+  else if (type === 'sub') renderSub();
 }
 
 function renderEarn() {
@@ -981,6 +1044,31 @@ function renderWish() {
   `).join('');
 }
 
+function renderSub() {
+  const records = [...data.sub].sort((a, b) => a.day - b.day);
+  const total = records.reduce((s, r) => s + r.amount, 0);
+  document.getElementById('sub-total').innerHTML = `<span>¥</span>${total.toLocaleString()}`;
+  const list = document.getElementById('sub-list');
+  if (records.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📱</div>サブスクを追加してみて！</div>`;
+    return;
+  }
+  list.innerHTML = records.map(r => `
+    <div class="record-item" data-id="${r.id}">
+      <div class="record-dot dot-sub"></div>
+      <div class="record-body">
+        <div class="record-name">${escHtml(r.name)}</div>
+        <div class="record-date">毎月 ${r.day}日</div>
+      </div>
+      <div class="record-amount amount-sub">${fmtAmount(r.amount)}</div>
+      <div class="record-actions">
+        <button class="action-btn edit-btn" onclick="showEdit('sub', ${r.id})">✏</button>
+        <button class="action-btn del-btn" onclick="deleteRecord('sub', ${r.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
 // エスケープ
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1019,6 +1107,7 @@ function importData(event) {
         alert('ファイルの形式が違うみたい！');
         return;
       }
+      if (!imported.sub) imported.sub = []; // 古いファイルの互換対応
       if (confirm('今のデータと置き換えていい？')) {
         data = imported;
         saveData();
