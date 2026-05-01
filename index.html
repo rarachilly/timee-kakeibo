@@ -730,7 +730,10 @@ function saveData() {
 function loadData() {
   const saved = localStorage.getItem('timee-kakeibo');
   if (saved) {
-    try { data = JSON.parse(saved); } catch(e) {}
+    try {
+      data = JSON.parse(saved);
+      if (!data.sub) data.sub = [];
+    } catch(e) {}
   }
 }
 
